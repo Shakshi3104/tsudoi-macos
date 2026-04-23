@@ -5,6 +5,7 @@
 
 import SwiftUI
 import Combine
+import FirebaseAuth
 
 // MARK: - Model
 
@@ -16,73 +17,119 @@ struct FlowingComment: Identifiable, Equatable {
     let duration: Double
 }
 
-// MARK: - Mock stream
+// MARK: - Root
 
-@MainActor
-final class MockCommentViewModel: ObservableObject {
-    @Published var activeComments: [FlowingComment] = []
+struct RootView: View {
+    @EnvironmentObject var appDelegate: AppDelegate
 
-    private var timer: Timer?
-    private let sampleTexts = [
-        "いいね！",
-        "素晴らしい",
-        "ナイスプレゼン",
-        "勉強になります",
-        "わかる",
-        "最高！",
-        "これは面白い",
-        "👏👏👏",
-        "なるほど",
-        "テンポがいい",
-        "続きが気になる",
-        "確かに"
-    ]
-    private let sampleColors: [Color] = [
-        .white, .cyan, .yellow, .green, .orange, .pink, .mint
-    ]
-
-    init() {
-        start()
-    }
-
-    deinit {
-        timer?.invalidate()
-    }
-
-    private func start() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.pushRandom()
+    var body: some View {
+        Group {
+            if appDelegate.isProjecting {
+                ProjectionView()
+            } else if appDelegate.user != nil {
+                CodeEntryView()
+            } else {
+                SignInView()
             }
-        }
-    }
-
-    private func pushRandom() {
-        let comment = FlowingComment(
-            text: sampleTexts.randomElement() ?? "Hello",
-            color: sampleColors.randomElement() ?? .white,
-            lane: Int.random(in: 0..<10),
-            duration: 10.0
-        )
-        activeComments.append(comment)
-
-        // Auto-remove after the animation finishes.
-        DispatchQueue.main.asyncAfter(deadline: .now() + comment.duration + 0.5) { [weak self] in
-            self?.activeComments.removeAll { $0.id == comment.id }
         }
     }
 }
 
-// MARK: - Views
-
+// Kept for backward compatibility with the default scene.
 struct ContentView: View {
-    @StateObject private var viewModel = MockCommentViewModel()
+    var body: some View {
+        RootView()
+    }
+}
+
+// MARK: - Setup views
+
+struct SignInView: View {
+    @EnvironmentObject var appDelegate: AppDelegate
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.tint)
+            Text("Tsudoi")
+                .font(.largeTitle.bold())
+            Text("Sign in to project comments on your slides")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button {
+                appDelegate.signIn()
+            } label: {
+                Text("Sign in with Google")
+                    .frame(minWidth: 200)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            if let error = appDelegate.lastError {
+                Text(error).foregroundStyle(.red).font(.caption)
+            }
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct CodeEntryView: View {
+    @EnvironmentObject var appDelegate: AppDelegate
+    @State private var code: String = ""
+
+    private var trimmed: String {
+        code.trimmingCharacters(in: .whitespaces)
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Tsudoi").font(.title.bold())
+            if let user = appDelegate.user {
+                Text("Signed in as \(user.displayName ?? user.email ?? "user")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            TextField("Event code", text: $code)
+                .textFieldStyle(.roundedBorder)
+                .textCase(.uppercase)
+                .frame(width: 220)
+                .onSubmit { startIfValid() }
+            Button("Start projection") {
+                startIfValid()
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            .disabled(trimmed.isEmpty)
+            Button("Sign out") {
+                appDelegate.signOut()
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            if let error = appDelegate.lastError {
+                Text(error).foregroundStyle(.red).font(.caption)
+            }
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func startIfValid() {
+        guard !trimmed.isEmpty else { return }
+        appDelegate.startProjection(with: trimmed)
+    }
+}
+
+// MARK: - Projection
+
+struct ProjectionView: View {
+    @EnvironmentObject var appDelegate: AppDelegate
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .topLeading) {
                 Color.clear
-                ForEach(viewModel.activeComments) { comment in
+                ForEach(appDelegate.activeComments) { comment in
                     FlowingCommentView(
                         comment: comment,
                         screenWidth: geo.size.width
@@ -130,8 +177,32 @@ struct FlowingCommentView: View {
     }
 }
 
+// MARK: - Color(hex:) helper
+
+extension Color {
+    init(hex: String) {
+        let cleaned = hex.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "#", with: "")
+        var value: UInt64 = 0
+        Scanner(string: cleaned).scanHexInt64(&value)
+        let r, g, b: Double
+        switch cleaned.count {
+        case 6:
+            r = Double((value >> 16) & 0xFF) / 255.0
+            g = Double((value >> 8) & 0xFF) / 255.0
+            b = Double(value & 0xFF) / 255.0
+        case 3:
+            r = Double((value >> 8) & 0xF) / 15.0
+            g = Double((value >> 4) & 0xF) / 15.0
+            b = Double(value & 0xF) / 15.0
+        default:
+            r = 1; g = 1; b = 1
+        }
+        self.init(red: r, green: g, blue: b)
+    }
+}
+
 #Preview {
     ContentView()
-        .frame(width: 1200, height: 800)
-        .background(Color.black) // preview だけ背景を黒くして読みやすくする
+        .environmentObject(AppDelegate())
+        .frame(width: 480, height: 320)
 }

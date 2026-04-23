@@ -169,8 +169,17 @@ Before changing a Swift model in `Models/`:
 
 - Install Xcode (latest stable).
 - Open `tsudoi-macos.xcodeproj`.
-- Add `GoogleService-Info.plist` from the Firebase console into the project
-  (it is gitignored — each user supplies their own).
+- Add `GoogleService-Info.plist` from the Firebase console into the
+  `tsudoi-macos/` source folder (it is gitignored — each user supplies their
+  own).
+- Replace the URL scheme in `Info.plist` with the `REVERSED_CLIENT_ID` from
+  your `GoogleService-Info.plist`. Without this, Google Sign-In cannot
+  redirect back into the app.
+- In **Signing & Capabilities**, confirm:
+  - *App Sandbox* → *Network* → **Outgoing Connections (Client)** is enabled
+    (Firebase needs to reach `firebaseapp.com` / `googleapis.com`).
+  - *Keychain Sharing* capability is added (Firebase Auth stores tokens in
+    Keychain; sandboxed apps need the capability even with an empty group).
 - Swift Package dependencies resolve on first build.
 - Build and run (`Cmd + R`).
 
