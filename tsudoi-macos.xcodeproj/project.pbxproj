@@ -14,7 +14,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		748AB8F42F99BEEA006E06A2 /* tsudoi-macos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tsudoi-macos.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		748AB8F42F99BEEA006E06A2 /* Tsudoi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tsudoi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -64,7 +64,7 @@
 		748AB8F52F99BEEA006E06A2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				748AB8F42F99BEEA006E06A2 /* tsudoi-macos.app */,
+				748AB8F42F99BEEA006E06A2 /* Tsudoi.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,7 +95,7 @@
 				748AB90C2F9A0607006E06A2 /* GoogleSignInSwift */,
 			);
 			productName = "tsudoi-macos";
-			productReference = 748AB8F42F99BEEA006E06A2 /* tsudoi-macos.app */;
+			productReference = 748AB8F42F99BEEA006E06A2 /* Tsudoi.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -215,6 +215,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = Tsudoi;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -272,6 +273,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = Tsudoi;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
@@ -312,7 +314,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.shakshi.tsudoi-macos";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = Tsudoi;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -358,7 +360,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.shakshi.tsudoi-macos";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = Tsudoi;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
