@@ -174,8 +174,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func startListening(eventId: String) {
         commentsListener?.remove()
         let db = Firestore.firestore()
+        let startTime = Timestamp(date: Date())
         commentsListener = db.collection("events").document(eventId)
             .collection("comments")
+            .whereField("createdAt", isGreaterThan: startTime)
             .order(by: "createdAt")
             .addSnapshotListener { [weak self] snapshot, error in
                 if let error {
