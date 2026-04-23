@@ -9,3 +9,7 @@ Package.resolved
 
 # Firebase - user-specific credentials
 GoogleService-Info.plist
+
+# Info.plist contains the Firebase-specific REVERSED_CLIENT_ID URL scheme.
+# Committed as Info.plist.example; users copy + edit after cloning.
+tsudoi-macos/Info.plist

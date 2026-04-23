@@ -172,9 +172,11 @@ Before changing a Swift model in `Models/`:
 - Add `GoogleService-Info.plist` from the Firebase console into the
   `tsudoi-macos/` source folder (it is gitignored — each user supplies their
   own).
-- Replace the URL scheme in `Info.plist` with the `REVERSED_CLIENT_ID` from
-  your `GoogleService-Info.plist`. Without this, Google Sign-In cannot
-  redirect back into the app.
+- Copy `tsudoi-macos/Info.plist.example` to `tsudoi-macos/Info.plist`, then
+  replace `REPLACE_WITH_YOUR_REVERSED_CLIENT_ID` with the `REVERSED_CLIENT_ID`
+  from your `GoogleService-Info.plist`. Without this, Google Sign-In cannot
+  redirect back into the app. `Info.plist` is gitignored so the
+  Firebase-specific URL scheme does not land in git history.
 - In **Signing & Capabilities**, confirm:
   - *App Sandbox* → *Network* → **Outgoing Connections (Client)** is enabled
     (Firebase needs to reach `firebaseapp.com` / `googleapis.com`).
