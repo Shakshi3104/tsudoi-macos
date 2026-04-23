@@ -163,8 +163,14 @@ struct FlowingCommentView: View {
         Text(comment.text)
             .font(.system(size: 52, weight: .bold))
             .foregroundColor(comment.color)
-            .shadow(color: .black.opacity(0.85), radius: 3, x: 2, y: 2)
-            .shadow(color: .black.opacity(0.6), radius: 8, x: 0, y: 0)
+            // White halo — 4-direction shadow approximates a stroke so
+            // dark text stays readable on dark slides.
+            .shadow(color: .white, radius: 1.2, x: 1.5, y: 0)
+            .shadow(color: .white, radius: 1.2, x: -1.5, y: 0)
+            .shadow(color: .white, radius: 1.2, x: 0, y: 1.5)
+            .shadow(color: .white, radius: 1.2, x: 0, y: -1.5)
+            // Subtle drop for depth on light slides.
+            .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 2)
             .fixedSize()
             .offset(x: xOffset, y: yOffset)
             .onAppear {
