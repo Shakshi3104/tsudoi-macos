@@ -100,7 +100,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         window.hasShadow = false
         window.level = .floating
         window.ignoresMouseEvents = true
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        window.hidesOnDeactivate = false
+        window.collectionBehavior = [
+            .canJoinAllSpaces,
+            .fullScreenAuxiliary,
+            .stationary,
+        ]
         moveToScreen(at: currentScreenIndex)
     }
 

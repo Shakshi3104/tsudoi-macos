@@ -71,6 +71,26 @@ License: MIT.
 3. The app becomes a transparent overlay on the selected display.
 4. From the menu bar, switch display or stop projection.
 
+### Present your slides in a window, not fullscreen
+
+macOS native fullscreen mode creates a dedicated Space that excludes other
+apps' windows, so an overlay like Tsudoi cannot draw on top of it. This
+affects Google Slides' "Present" button, PowerPoint's Slide Show, and any
+app that uses the system fullscreen API.
+
+**Workaround:** present in a window instead.
+
+- **Google Slides**: in the presenter window, click the gear / options
+  icon and choose *Open speaker notes* or *New window* — anything that
+  keeps the presentation in a normal window. Then resize that window to
+  fill the target display. Do NOT click the native fullscreen green
+  button.
+- **Keynote / PowerPoint**: use *Play Slideshow in Window* (Keynote) or
+  *Set Up Slide Show → Browsed by an individual (window)* (PowerPoint).
+
+With the slides in a normal (even if large) window, the Tsudoi overlay
+sits on top correctly.
+
 ## Architecture
 
 See `CLAUDE.md` for details on the window configuration, Firestore
