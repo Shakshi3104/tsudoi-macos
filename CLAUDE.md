@@ -52,19 +52,24 @@ by rules defined in the `tsudoi-web` repository.
 tsudoi-macos/
 ├── tsudoi-macos.xcodeproj
 └── tsudoi-macos/
-    ├── tsudoi_macosApp.swift       # App entry point
-    ├── Views/
-    │   ├── TransparentWindow.swift # NSWindow configuration
-    │   ├── CommentFlowView.swift   # Comment animation
-    │   └── ReactionView.swift      # Reaction animation
-    ├── Models/
-    │   ├── Event.swift
-    │   ├── Comment.swift
-    │   └── Reaction.swift
-    └── Services/
-        ├── FirestoreService.swift  # Listener management
-        └── AuthService.swift       # Google SSO sign-in
+    ├── tsudoi_macosApp.swift       # App + AppDelegate (state container)
+    ├── ContentView.swift           # Thin wrapper around RootView
+    ├── Model/
+    │   └── FlowingComment.swift    # Animated comment model + Color(hex:)
+    ├── Service/
+    │   ├── AuthService.swift       # Google SSO + Firebase Auth wrapper
+    │   └── FirestoreService.swift  # Comments listener
+    └── View/
+        ├── TransparentWindow.swift # WindowAccessor + NSWindow styles
+        ├── RootView.swift          # Chooses screen by auth / projection state
+        ├── SignInView.swift        # Google sign-in prompt
+        ├── CodeEntryView.swift     # Event code entry
+        ├── CommentFlowView.swift   # ProjectionView + FlowingCommentView
+        └── MenuBarContent.swift    # MenuBarExtra controls
 ```
+
+Reaction support (`ReactionView.swift`, `Reaction.swift`) is planned for a
+later phase — not yet implemented.
 
 ## Firestore schema (summary)
 

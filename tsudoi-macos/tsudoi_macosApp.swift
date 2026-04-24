@@ -6,10 +6,8 @@
 import SwiftUI
 import AppKit
 import Combine
-import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
-import GoogleSignIn
 
 @main
 struct tsudoi_macosApp: App {
@@ -33,6 +31,9 @@ struct tsudoi_macosApp: App {
 
 // MARK: - AppDelegate
 
+/// App-scoped state container. Owns the NSWindow reference, the auth /
+/// Firestore subscriptions, and the list of comments currently on screen.
+/// Views observe it via @EnvironmentObject.
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private weak var window: NSWindow?
 
@@ -49,16 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var commentsListener: ListenerRegistration?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        FirebaseApp.configure()
-
-        if let clientID = FirebaseApp.app()?.options.clientID {
-            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
-        }
-
-        // Restore any previous Google sign-in
-        GIDSignIn.sharedInstance.restorePreviousSignIn()
-
-        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        AuthService.configure()
+        authStateHandle = AuthService.addAuthStateListener { [weak self] user in
             Task { @MainActor in
                 self?.user = user
             }
@@ -67,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
-            _ = GIDSignIn.sharedInstance.handle(url)
+            AuthService.handle(url: url)
         }
     }
 
@@ -75,38 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     func attachWindow(_ window: NSWindow) {
         self.window = window
-        applySetupWindowStyle()
-    }
-
-    private func applySetupWindowStyle() {
-        guard let window else { return }
-        window.styleMask = [.titled, .closable, .miniaturizable]
-        window.isOpaque = true
-        window.backgroundColor = NSColor.windowBackgroundColor
-        window.hasShadow = true
-        window.level = .normal
-        window.ignoresMouseEvents = false
-        window.collectionBehavior = []
-        window.setContentSize(NSSize(width: 480, height: 320))
-        window.center()
-        window.title = "Tsudoi"
-    }
-
-    private func applyProjectionWindowStyle() {
-        guard let window else { return }
-        window.styleMask = [.borderless]
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = false
-        window.level = .floating
-        window.ignoresMouseEvents = true
-        window.hidesOnDeactivate = false
-        window.collectionBehavior = [
-            .canJoinAllSpaces,
-            .fullScreenAuxiliary,
-            .stationary,
-        ]
-        moveToScreen(at: currentScreenIndex)
+        WindowStyle.applySetup(to: window)
     }
 
     func moveToScreen(at index: Int) {
@@ -129,47 +91,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             lastError = "No presenting window available"
             return
         }
-
-        GIDSignIn.sharedInstance.signIn(withPresenting: window) { [weak self] result, error in
-            if let error {
+        AuthService.signInWithGoogle(presenting: window) { [weak self] result in
+            if case let .failure(error) = result {
                 Task { @MainActor in self?.lastError = error.localizedDescription }
-                return
-            }
-            guard let result else { return }
-
-            let gUser = result.user
-            guard let idToken = gUser.idToken?.tokenString else {
-                Task { @MainActor in self?.lastError = "Missing ID token" }
-                return
-            }
-            let credential = GoogleAuthProvider.credential(
-                withIDToken: idToken,
-                accessToken: gUser.accessToken.tokenString
-            )
-
-            Auth.auth().signIn(with: credential) { _, error in
-                if let error {
-                    Task { @MainActor in self?.lastError = error.localizedDescription }
-                }
             }
         }
     }
 
     func signOut() {
         stopProjection()
-        try? Auth.auth().signOut()
-        GIDSignIn.sharedInstance.signOut()
+        AuthService.signOut()
     }
 
     // MARK: Projection
 
     func startProjection(with code: String) {
         let normalized = code.trimmingCharacters(in: .whitespaces).uppercased()
-        guard !normalized.isEmpty else { return }
-
+        guard !normalized.isEmpty, let window else { return }
         eventCode = normalized
         isProjecting = true
-        applyProjectionWindowStyle()
+        WindowStyle.applyProjection(to: window)
+        moveToScreen(at: currentScreenIndex)
         startListening(eventId: normalized)
     }
 
@@ -179,123 +121,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         activeComments = []
         isProjecting = false
         eventCode = nil
-        applySetupWindowStyle()
+        if let window {
+            WindowStyle.applySetup(to: window)
+        }
     }
 
     private func startListening(eventId: String) {
         commentsListener?.remove()
-        let db = Firestore.firestore()
-        let startTime = Timestamp(date: Date())
-        commentsListener = db.collection("events").document(eventId)
-            .collection("comments")
-            .whereField("createdAt", isGreaterThan: startTime)
-            .order(by: "createdAt")
-            .addSnapshotListener { [weak self] snapshot, error in
-                if let error {
-                    Task { @MainActor in self?.lastError = error.localizedDescription }
-                    return
-                }
-                guard let snapshot else { return }
+        commentsListener = FirestoreService.listenForNewComments(
+            eventId: eventId,
+            onAdded: { [weak self] payload in
                 Task { @MainActor in
-                    self?.handleSnapshot(snapshot)
+                    self?.append(payload)
+                }
+            },
+            onError: { [weak self] error in
+                Task { @MainActor in
+                    self?.lastError = error.localizedDescription
                 }
             }
+        )
     }
 
     @MainActor
-    private func handleSnapshot(_ snapshot: QuerySnapshot) {
-        for change in snapshot.documentChanges where change.type == .added {
-            let data = change.document.data()
-            guard let text = data["text"] as? String else { continue }
-            if data["hidden"] as? Bool == true { continue }
-            let colorHex = data["color"] as? String ?? "#FFFFFF"
-            let comment = FlowingComment(
-                text: text,
-                color: Color(hex: colorHex),
-                // Lanes 0..<2 = top band, 2..<4 = bottom band.
-                // The middle of the screen is intentionally left empty so
-                // slides stay readable when comments come in fast.
-                lane: Int.random(in: 0..<4),
-                duration: 10.0
-            )
-            activeComments.append(comment)
+    private func append(_ payload: IncomingComment) {
+        let comment = FlowingComment(
+            text: payload.text,
+            color: Color(hex: payload.colorHex),
+            // Lanes 0..<2 = top band, 2..<4 = bottom band.
+            lane: Int.random(in: 0..<4),
+            duration: 10.0
+        )
+        activeComments.append(comment)
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + comment.duration + 0.5) { [weak self] in
-                Task { @MainActor in
-                    self?.activeComments.removeAll { $0.id == comment.id }
-                }
+        DispatchQueue.main.asyncAfter(deadline: .now() + comment.duration + 0.5) { [weak self] in
+            Task { @MainActor in
+                self?.activeComments.removeAll { $0.id == comment.id }
             }
         }
     }
-}
-
-// MARK: - Menu bar
-
-struct MenuBarContent: View {
-    @ObservedObject var appDelegate: AppDelegate
-
-    var body: some View {
-        if appDelegate.isProjecting {
-            Text("Projecting")
-                .font(.headline)
-            if let code = appDelegate.eventCode {
-                Text("Code: \(code)").foregroundStyle(.secondary)
-            }
-            Divider()
-            Text("Display").font(.headline)
-            ForEach(Array(NSScreen.screens.enumerated()), id: \.offset) { index, screen in
-                Button {
-                    appDelegate.moveToScreen(at: index)
-                } label: {
-                    let label = displayLabel(for: screen, index: index)
-                    if appDelegate.currentScreenIndex == index {
-                        Label(label, systemImage: "checkmark")
-                    } else {
-                        Text(label)
-                    }
-                }
-            }
-            Divider()
-            Button("Stop projection") {
-                appDelegate.stopProjection()
-            }
-        } else {
-            Text("Tsudoi").font(.headline)
-            if appDelegate.user != nil {
-                Text("Enter an event code to begin")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Sign in to begin")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        Divider()
-        Button("Quit") {
-            NSApplication.shared.terminate(nil)
-        }
-        .keyboardShortcut("q")
-    }
-
-    private func displayLabel(for screen: NSScreen, index: Int) -> String {
-        let base = screen.localizedName.isEmpty ? "Display \(index + 1)" : screen.localizedName
-        return screen == NSScreen.main ? "\(base) (Main)" : base
-    }
-}
-
-// MARK: - WindowAccessor
-
-struct WindowAccessor: NSViewRepresentable {
-    let callback: (NSWindow) -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            if let window = view.window {
-                callback(window)
-            }
-        }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {}
 }
