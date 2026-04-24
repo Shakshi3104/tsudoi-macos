@@ -37,6 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private weak var window: NSWindow?
 
     @Published var currentScreenIndex: Int = 0
+    @Published var topInset: CGFloat = 0
+    @Published var bottomInset: CGFloat = 0
     @Published var user: User?
     @Published var eventCode: String?
     @Published var activeComments: [FlowingComment] = []
@@ -106,8 +108,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let screens = NSScreen.screens
         guard index < screens.count, let window else { return }
         currentScreenIndex = index
+        let screen = screens[index]
+        // visibleFrame excludes the menu bar and Dock; subtract to get insets.
+        topInset = screen.frame.maxY - screen.visibleFrame.maxY
+        bottomInset = screen.visibleFrame.minY - screen.frame.minY
         if isProjecting {
-            window.setFrame(screens[index].frame, display: true, animate: false)
+            window.setFrame(screen.frame, display: true, animate: false)
         }
     }
 
@@ -201,7 +207,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let comment = FlowingComment(
                 text: text,
                 color: Color(hex: colorHex),
-                lane: Int.random(in: 0..<10),
+                // Lanes 0..<2 = top band, 2..<4 = bottom band.
+                // The middle of the screen is intentionally left empty so
+                // slides stay readable when comments come in fast.
+                lane: Int.random(in: 0..<4),
                 duration: 10.0
             )
             activeComments.append(comment)

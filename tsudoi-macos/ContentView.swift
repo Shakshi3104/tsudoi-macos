@@ -122,6 +122,14 @@ struct CodeEntryView: View {
 
 // MARK: - Projection
 
+// Lanes 0..<lanesPerZone fill the top band; lanes lanesPerZone..<2*lanesPerZone
+// fill the bottom band. The middle of the screen is left empty so the slides
+// stay readable even when comments are coming in thick and fast.
+let lanesPerZone = 2
+let laneHeight: CGFloat = 80
+// Small breathing room on top of whatever inset the menu bar / Dock impose.
+let zoneBreathingRoom: CGFloat = 16
+
 struct ProjectionView: View {
     @EnvironmentObject var appDelegate: AppDelegate
 
@@ -132,7 +140,10 @@ struct ProjectionView: View {
                 ForEach(appDelegate.activeComments) { comment in
                     FlowingCommentView(
                         comment: comment,
-                        screenWidth: geo.size.width
+                        screenWidth: geo.size.width,
+                        screenHeight: geo.size.height,
+                        topInset: appDelegate.topInset,
+                        bottomInset: appDelegate.bottomInset
                     )
                 }
             }
@@ -145,18 +156,39 @@ struct ProjectionView: View {
 struct FlowingCommentView: View {
     let comment: FlowingComment
     let screenWidth: CGFloat
+    let screenHeight: CGFloat
+    let topInset: CGFloat
+    let bottomInset: CGFloat
 
     @State private var xOffset: CGFloat
     @State private var hasStarted = false
 
-    init(comment: FlowingComment, screenWidth: CGFloat) {
+    init(
+        comment: FlowingComment,
+        screenWidth: CGFloat,
+        screenHeight: CGFloat,
+        topInset: CGFloat,
+        bottomInset: CGFloat
+    ) {
         self.comment = comment
         self.screenWidth = screenWidth
+        self.screenHeight = screenHeight
+        self.topInset = topInset
+        self.bottomInset = bottomInset
         _xOffset = State(initialValue: screenWidth)
     }
 
     private var yOffset: CGFloat {
-        CGFloat(comment.lane) * 80 + 40
+        if comment.lane < lanesPerZone {
+            // Top band — clear the menu bar / notch
+            return topInset + zoneBreathingRoom + CGFloat(comment.lane) * laneHeight
+        } else {
+            // Bottom band — stack upward from just above the Dock
+            let indexFromBottom = comment.lane - lanesPerZone
+            let distanceFromBottom = bottomInset + zoneBreathingRoom
+                + CGFloat(lanesPerZone - indexFromBottom) * laneHeight
+            return screenHeight - distanceFromBottom
+        }
     }
 
     var body: some View {
