@@ -13,3 +13,7 @@ GoogleService-Info.plist
 # Info.plist contains the Firebase-specific REVERSED_CLIENT_ID URL scheme.
 # Committed as Info.plist.example; users copy + edit after cloning.
 tsudoi-macos/Info.plist
+
+# App-icon exploration scratch. The shipping source is tsudoi-macos/AppIcon.icon
+# (icon.json + the SVG layers), which Icon Composer owns.
+design/
