@@ -13,7 +13,7 @@ License: MIT.
 
 ## Requirements
 
-- macOS 13+ (Ventura or later)
+- macOS 26+ (Tahoe or later)
 - Xcode (latest stable)
 - A Firebase project with Firestore Auth (Google SSO) enabled — the web repo
   owns the canonical setup

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "2640"
+   LastUpgradeVersion = "2700"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "748AB8F32F99BEEA006E06A2"
-               BuildableName = "tsudoi-macos.app"
+               BuildableName = "Tsudoi.app"
                BlueprintName = "tsudoi-macos"
                ReferencedContainer = "container:tsudoi-macos.xcodeproj">
             </BuildableReference>
@@ -46,7 +46,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748AB8F32F99BEEA006E06A2"
-            BuildableName = "tsudoi-macos.app"
+            BuildableName = "Tsudoi.app"
             BlueprintName = "tsudoi-macos"
             ReferencedContainer = "container:tsudoi-macos.xcodeproj">
          </BuildableReference>
@@ -63,7 +63,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748AB8F32F99BEEA006E06A2"
-            BuildableName = "tsudoi-macos.app"
+            BuildableName = "Tsudoi.app"
             BlueprintName = "tsudoi-macos"
             ReferencedContainer = "container:tsudoi-macos.xcodeproj">
          </BuildableReference>
