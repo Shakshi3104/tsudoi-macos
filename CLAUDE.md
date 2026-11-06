@@ -44,7 +44,7 @@ by rules defined in the `tsudoi-web` repository.
 - Firebase Apple SDK via Swift Package Manager
   - `FirebaseAuth`
   - `FirebaseFirestore`
-- macOS 26+ (Tahoe or later) target
+- macOS 15+ (Sequoia or later) target
 
 ### Key directories
 
