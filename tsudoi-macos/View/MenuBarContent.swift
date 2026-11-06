@@ -19,16 +19,12 @@ struct MenuBarContent: View {
             Divider()
             Text("Display").font(.headline)
             ForEach(Array(NSScreen.screens.enumerated()), id: \.offset) { index, screen in
-                Button {
-                    appDelegate.moveToScreen(at: index)
-                } label: {
-                    let label = displayLabel(for: screen, index: index)
-                    if appDelegate.currentScreenIndex == index {
-                        Label(label, systemImage: "checkmark")
-                    } else {
-                        Text(label)
-                    }
-                }
+                // Toggle maps to NSMenuItem.state, so the checkmark is the
+                // native menu one rather than an icon the OS may hide.
+                Toggle(displayLabel(for: screen, index: index), isOn: Binding(
+                    get: { appDelegate.currentScreenIndex == index },
+                    set: { _ in appDelegate.moveToScreen(at: index) }
+                ))
             }
             Divider()
             Button("Stop projection") {
